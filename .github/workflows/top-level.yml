@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
       - 'ci/*'
-    #  - prepare-sdg-linux-artefacts -> enable once the workflow is ready
+      - 'prepare-sdg-linux-artefacts'
   pull_request:
 
 jobs:
@@ -257,13 +257,19 @@ jobs:
   #       adi_nios2_defconfig-*
   #       dtb-*
 
-  deploy_sdg_linux_artifacts:
+  # ToDo: and if condition to run only for PRs, push on main or release branches.
+  deploy_kuiper_binaries:
     needs: [assert_build]
-    uses: analogdevicesinc/linux/.github/workflows/deploy-sdg-linux-artifacts.yml@ci1
+    uses: analogdevicesinc/linux/.github/workflows/deploy_kuiper_binaries.yml@unify-linux-and-rpi-flows
     secrets: inherit
     permissions:
-      contents: read
+      id-token: write
+      contents: write
+      actions: read
     with:
+      scripts-ref: unify-linux-and-rpi-flows
+      pr-number: ${{ github.event.pull_request.number }}
+      pr-target-branch: ${{ github.event.pull_request.base.ref }}
       artifacts: >
         adi_versal_defconfig-*
         adi_zynqmp_defconfig-*
