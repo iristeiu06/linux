@@ -52,6 +52,24 @@ int __iio_add_chan_devattr(const char *postfix,
 			   struct device *dev,
 			   struct iio_buffer *buffer,
 			   struct list_head *attr_list);
+
+int __iio_dev_attr_check_dup(struct iio_dev_attr *iio_attr,
+			     struct list_head *attr_list);
+
+int __iio_device_attr_init(struct device_attribute *dev_attr,
+			    const char *postfix,
+			    struct iio_chan_spec const *chan,
+			    ssize_t (*readfunc)(struct device *dev,
+						struct device_attribute *attr,
+						char *buf),
+			    ssize_t (*writefunc)(struct device *dev,
+						 struct device_attribute *attr,
+						 const char *buf,
+						 size_t len),
+			    enum iio_shared_by shared_by);
+
+void __iio_device_attr_deinit(struct device_attribute *dev_attr);
+
 void iio_free_chan_devattr_list(struct list_head *attr_list);
 
 int iio_device_register_sysfs_group(struct iio_dev *indio_dev,
