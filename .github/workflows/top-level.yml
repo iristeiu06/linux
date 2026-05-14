@@ -260,7 +260,7 @@ jobs:
   # ToDo: and if condition to run only for PRs, push on main or release branches.
   deploy_kuiper_binaries:
     needs: [assert_build]
-    uses: analogdevicesinc/linux/.github/workflows/deploy_kuiper_binaries.yml@unify-linux-and-rpi-flows
+    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@unify-linux-and-rpi-flows
     secrets: inherit
     permissions:
       id-token: write
