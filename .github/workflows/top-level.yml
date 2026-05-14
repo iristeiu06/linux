@@ -227,7 +227,7 @@ jobs:
       id-token: write
       contents: write
       actions: read
-    uses: analogdevicesinc/linux/.github/workflows/deploy_kuiper_binaries.yml@unify-linux-and-rpi-flows
+    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@unify-linux-and-rpi-flows
     secrets: inherit
     with:
       scripts-ref: unify-linux-and-rpi-flows
