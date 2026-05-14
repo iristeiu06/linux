@@ -15,6 +15,7 @@
 struct iio_buffer;
 struct iio_chan_spec;
 struct iio_dev;
+struct iio_dev_attr;
 
 extern const struct device_type iio_device_type;
 
@@ -130,6 +131,15 @@ static inline int iio_buffer_alloc_sysfs(struct iio_dev *indio_dev)
 static inline void iio_buffer_free_sysfs(struct iio_dev *indio_dev) {}
 static inline void iio_device_detach_buffers(struct iio_dev *indio_dev) {}
 
+#endif
+
+#ifdef CONFIG_IIO_BACKEND
+int iio_backend_add_extended_sysfs(struct iio_dev *indio_dev);
+#else
+static inline int iio_backend_add_extended_sysfs(struct iio_dev *indio_dev)
+{
+	return 0;
+}
 #endif
 
 int iio_device_register_eventset(struct iio_dev *indio_dev);
