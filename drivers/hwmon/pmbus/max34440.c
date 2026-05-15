@@ -25,6 +25,11 @@ enum chips {
 	max34461,
 };
 
+/*
+ * ADPM* devices are based on MAX34451. Only the MFR_LOCATION register
+ * is unique enough to differentiate the devices.
+ */
+#define ADPM_MFR_LOCATION		0x9c
 #define MAX34440_MFR_VOUT_PEAK		0xd4
 #define MAX34440_MFR_IOUT_PEAK		0xd5
 #define MAX34440_MFR_TEMPERATURE_PEAK	0xd6
@@ -52,6 +57,46 @@ enum chips {
 
 #define MAX34451_MFR_CHANNEL_CONFIG	0xe4
 #define MAX34451_MFR_CHANNEL_CONFIG_SEL_MASK	0x3f
+
+/* MFR_LOCATION signatures for ADPM device identification */
+struct adpm_signature {
+	u8 sig[8];
+	int device_id;
+};
+
+static const struct adpm_signature adpm_signatures[] = {
+	/* ADPM12160 variants */
+	/* 3130313031303130 */
+	{ { 0x30, 0x31, 0x30, 0x31, 0x30, 0x31, 0x30, 0x31 }, adpm12160 },
+	/* 3136313235484331 */
+	{ { 0x31, 0x43, 0x48, 0x35, 0x32, 0x31, 0x36, 0x31 }, adpm12160 },
+	/* 3136313235484D31 */
+	{ { 0x31, 0x4D, 0x48, 0x35, 0x32, 0x31, 0x36, 0x31 }, adpm12160 },
+	/* 31363132354C4331 */
+	{ { 0x31, 0x43, 0x4C, 0x35, 0x32, 0x31, 0x36, 0x31 }, adpm12160 },
+	/* 31363132354C4D31 */
+	{ { 0x31, 0x4D, 0x4C, 0x35, 0x32, 0x31, 0x36, 0x31 }, adpm12160 },
+
+	/* ADPM12200 variants */
+	/* 3230313230484331 */
+	{ { 0x31, 0x43, 0x48, 0x30, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 3230313230484D31 */
+	{ { 0x31, 0x4D, 0x48, 0x30, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 32303132304C4331 */
+	{ { 0x31, 0x43, 0x4C, 0x30, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 32303132304C4D31 */
+	{ { 0x31, 0x4D, 0x4C, 0x30, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 3230313235484331 */
+	{ { 0x31, 0x43, 0x48, 0x35, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 3230313235484D31 */
+	{ { 0x31, 0x4D, 0x48, 0x35, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 32303132354C4331 */
+	{ { 0x31, 0x43, 0x4C, 0x35, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 32303132354C4D31 */
+	{ { 0x31, 0x4D, 0x4C, 0x35, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+	/* 32303132324C4D31 */
+	{ { 0x31, 0x4D, 0x4C, 0x32, 0x32, 0x31, 0x30, 0x32 }, adpm12200 },
+};
 
 struct max34440_data {
 	int id;
@@ -603,6 +648,57 @@ static struct pmbus_driver_info max34440_info[] = {
 	},
 };
 
+/*
+ * Verify ADPM device by reading MFR_LOCATION register (0x9C)
+ * Returns 0 if device matches expected ID, negative error code otherwise
+ */
+static int adpm_verify_device(struct i2c_client *client, int expected_id)
+{
+	u8 buf[8];
+	int detected_id;
+	int ret;
+	int i;
+
+	/*
+	 * Check i2c functionality, i2c_smbus_read_i2c_block_data is used as
+	 * MFR_LOCATION register in ADPM devices has no length byte
+	 */
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
+		dev_err(&client->dev, "I2C functionality not supported\n");
+		return -ENODEV;
+	}
+
+	/* Read all 8 bytes of MFR_LOCATION register */
+	ret = i2c_smbus_read_i2c_block_data(client, ADPM_MFR_LOCATION,
+					    sizeof(buf), buf);
+	if (ret < 0) {
+		dev_err(&client->dev, "Failed to read MFR_LOCATION register: %d\n", ret);
+		return ret;
+	}
+
+	/* Match against known signatures */
+	detected_id = -1;
+	for (i = 0; i < ARRAY_SIZE(adpm_signatures); i++) {
+		if (memcmp(buf, adpm_signatures[i].sig, 8) == 0) {
+			detected_id = adpm_signatures[i].device_id;
+			break;
+		}
+	}
+
+	if (detected_id == -1) {
+		dev_err(&client->dev, "Unknown ADPM MFR_LOCATION signature\n");
+		return -ENODEV;
+	}
+
+	/* Verify detected ID matches expected ID */
+	if (detected_id != expected_id) {
+		dev_err(&client->dev, "Device mismatch: MFR_LOCATION expects another device\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 static int max34440_probe(struct i2c_client *client)
 {
 	struct max34440_data *data;
@@ -613,6 +709,14 @@ static int max34440_probe(struct i2c_client *client)
 	if (!data)
 		return -ENOMEM;
 	data->id = i2c_match_id(max34440_id, client)->driver_data;
+
+	/* Verify ADPM device matches expected ID using MFR_LOCATION */
+	if (data->id == adpm12160 || data->id == adpm12200) {
+		rv = adpm_verify_device(client, data->id);
+		if (rv)
+			return rv;
+	}
+
 	data->info = max34440_info[data->id];
 	data->iout_oc_fault_limit = MAX34440_IOUT_OC_FAULT_LIMIT;
 	data->iout_oc_warn_limit = MAX34440_IOUT_OC_WARN_LIMIT;
