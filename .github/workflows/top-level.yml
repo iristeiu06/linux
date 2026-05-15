@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - 'rpi-*.y'
-      - 'rpi-test'
+      #- 'rpi-test'
     paths-ignore:
       - 'docs/**'
   pull_request:
@@ -221,16 +221,17 @@ jobs:
   #       adi_bcm*_defconfig-*
   #       dtb-*
 
+  # Condition: Fork PRs blocked (no secrets access). Push scope handled by workflow trigger.
   deploy_rpi_artifacts:
     needs: [assert_build]
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' }}
     permissions:
       id-token: write
       contents: write
       actions: read
-    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@unify-linux-and-rpi-flows
+    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@ci
     secrets: inherit
     with:
-      scripts-ref: unify-linux-and-rpi-flows
       artifacts: >
         adi_bcm*_defconfig-*
         dtb-*
