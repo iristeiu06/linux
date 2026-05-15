@@ -257,19 +257,38 @@ jobs:
   #       adi_nios2_defconfig-*
   #       dtb-*
 
-  # ToDo: and if condition to run only for PRs, push on main or release branches.
+
+  #Example of usage if solution is accepted and merged on 'ci'
   deploy_kuiper_binaries:
     needs: [assert_build]
-    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@unify-linux-and-rpi-flows
+    # if: >
+    #   (
+    #     github.event_name == 'pull_request' &&
+    #     github.event.pull_request.head.repo.full_name == github.repository &&
+    #     (
+    #       github.event.pull_request.base.ref == 'main' ||
+    #       github.event.pull_request.base.ref == 'next_stable' ||
+    #       startsWith(github.event.pull_request.base.ref, 'xlnx/release/')
+    #     )
+    #   ) ||
+    #   (
+    #     github.event_name == 'push' &&
+    #     (
+    #       github.ref == 'refs/heads/main' ||
+    #       github.ref == 'refs/heads/next_stable' ||
+    #       startsWith(github.ref, 'refs/heads/xlnx/release/')
+    #     )
+    #   )
+    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@ci1
     secrets: inherit
     permissions:
       id-token: write
       contents: write
       actions: read
     with:
-      scripts-ref: unify-linux-and-rpi-flows
       pr-number: ${{ github.event.pull_request.number }}
       pr-target-branch: ${{ github.event.pull_request.base.ref }}
+      scripts-ref: "ci1"
       artifacts: >
         adi_versal_defconfig-*
         adi_zynqmp_defconfig-*
