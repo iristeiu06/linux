@@ -161,9 +161,5 @@ jobs:
                                $package_file \
                                $file \
                                "$tags_" \
-<<<<<<< HEAD
-                               ${{ github.sha }}
-=======
                                ${{ inputs.version }}
->>>>>>> 9b341e5115e4 (ci: upload_to_cloudsmith: Use input variable if provided)
         done
