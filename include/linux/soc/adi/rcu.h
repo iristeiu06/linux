@@ -14,6 +14,7 @@
 
 #include <linux/bits.h>
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/types.h>
@@ -64,6 +65,7 @@
 struct adi_rcu;
 struct adi_sec;
 
+#if IS_ENABLED(CONFIG_ARCH_SC5XX) || IS_ENABLED(CONFIG_ARCH_SC59X_64)
 /*
  * Get the RCU instance connected to the given device as a device tree phandle
  * in a property named "adi,rcu"
@@ -88,5 +90,26 @@ void adi_rcu_set_sec(struct adi_rcu *rcu, struct adi_sec *sec);
 
 u32 adi_rcu_readl(struct adi_rcu *rcu, int offset);
 void adi_rcu_writel(u32 val, struct adi_rcu *rcu, int offset);
+#else
+static inline struct adi_rcu *get_adi_rcu_from_node(struct device *dev)
+{ return ERR_PTR(-ENODEV); }
+static inline void put_adi_rcu(struct adi_rcu *rcu) {}
+static inline void adi_rcu_msg_set(struct adi_rcu *rcu, u32 bits) {}
+static inline void adi_rcu_msg_clear(struct adi_rcu *rcu, u32 bits) {}
+static inline int adi_rcu_check_coreid_valid(struct adi_rcu *rcu, int coreid)
+{ return -ENODEV; }
+static inline int adi_rcu_reset_core(struct adi_rcu *rcu, int coreid)
+{ return -ENODEV; }
+static inline int adi_rcu_start_core(struct adi_rcu *rcu, int coreid)
+{ return -ENODEV; }
+static inline int adi_rcu_stop_core(struct adi_rcu *rcu, int coreid, int coreirq)
+{ return -ENODEV; }
+static inline int adi_rcu_is_core_idle(struct adi_rcu *rcu, int coreid)
+{ return -ENODEV; }
+static inline void adi_rcu_set_sec(struct adi_rcu *rcu, struct adi_sec *sec) {}
+static inline u32 adi_rcu_readl(struct adi_rcu *rcu, int offset)
+{ return 0; }
+static inline void adi_rcu_writel(u32 val, struct adi_rcu *rcu, int offset) {}
+#endif
 
 #endif

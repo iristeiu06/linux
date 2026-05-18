@@ -18,14 +18,18 @@
 #define SOC_ADI_ICC_H
 
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/types.h>
-#include <asm/cacheflush.h>
 
 #define sm_atomic_read(v) ioread16(v)
 #define sm_atomic_write(i, v) iowrite16(v, i)
+#define arm_core_id()	0
+
+#ifdef CONFIG_ARM
+#include <asm/cacheflush.h>
 #define invalidate_dcache_range(start, end) __sync_cache_range_r((void *)start, end - start)
 #define flush_dcache_range(start, end) __sync_cache_range_w((void *)start, end - start)
-#define arm_core_id()	0
+#endif
 
 #ifdef CONFIG_ARCH_SC59X_64
 #define ICC_CODE_START		0x20080000
@@ -113,6 +117,7 @@ struct adi_resource_table_hdr {
 
 struct adi_tru;
 
+#if IS_ENABLED(CONFIG_ARCH_SC5XX) || IS_ENABLED(CONFIG_ARCH_SC59X_64)
 struct adi_tru *get_adi_tru_from_node(struct device *dev);
 void put_adi_tru(struct adi_tru *tru);
 int adi_tru_trigger_device(struct adi_tru *tru, struct device *dev);
@@ -123,5 +128,23 @@ extern void adi_tru_remove(struct platform_device *pdev);
 extern int adi_tru_set_trigger(struct adi_tru *tru,
 			       struct device_node *master,
 			       struct device_node *slave);
+#else
+static inline struct adi_tru *get_adi_tru_from_node(struct device *dev)
+{ return ERR_PTR(-ENODEV); }
+static inline void put_adi_tru(struct adi_tru *tru) {}
+static inline int adi_tru_trigger_device(struct adi_tru *tru, struct device *dev)
+{ return -ENODEV; }
+static inline int adi_tru_trigger(struct adi_tru *tru, u32 master)
+{ return -ENODEV; }
+static inline int adi_tru_set_trigger_by_id(struct adi_tru *tru, u32 master, u32 slave)
+{ return -ENODEV; }
+static inline int adi_tru_probe(struct platform_device *pdev)
+{ return -ENODEV; }
+static inline void adi_tru_remove(struct platform_device *pdev) {}
+static inline int adi_tru_set_trigger(struct adi_tru *tru,
+				      struct device_node *master,
+				      struct device_node *slave)
+{ return -ENODEV; }
+#endif
 
 #endif
