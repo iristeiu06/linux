@@ -279,7 +279,7 @@ jobs:
     #       startsWith(github.ref, 'refs/heads/xlnx/release/')
     #     )
     #   )
-    uses: analogdevicesinc/linux/.github/workflows/deploy_linux_artifacts.yml@ci1
+    uses: analogdevicesinc/linux/.github/workflows/deploy-kuiper-artifacts.yml@ci1
     secrets: inherit
     permissions:
       id-token: write
