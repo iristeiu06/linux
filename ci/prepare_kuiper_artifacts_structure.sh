@@ -118,6 +118,8 @@ copy_artifacts() {
     find "${DIST_DIR}" -name "*.dtb" -exec cp {} "${dtb_flat}/" \;
     # Microblaze DTBs are embedded into kernel images, not unpacked to dist/
     find "${SOURCE_DIRECTORY}" -path "*/arch/microblaze/boot/dts/*" -name "*.dtb" -exec cp {} "${dtb_flat}/" \; 2>/dev/null || true
+    # Microblaze .strip files (kernel images with debug symbols stripped)
+    find "${DIST_DIR}/microblaze/boot/kernel/adi_mb_defconfig" -name "*.strip" -exec cp {} "${dtb_flat}/" \; 2>/dev/null || true
 
     for arch in "${!typeARCH[@]}"; do
         local arch_dtb_count=0
@@ -144,7 +146,7 @@ copy_artifacts() {
             # Match DTBs by platform prefix (e.g., zynq_*, socfpga_arria10_*, vcu118_*)
             local dtbs_to_copy
             if [[ "${arch}" == "microblaze" ]]; then
-                dtbs_to_copy=$(ls "${dtb_flat}"/*.dtb 2>/dev/null | xargs -n1 basename | grep -E "^(kc705|kcu105|vc707|vcu118|vcu128)" || true)
+                dtbs_to_copy=$(ls "${dtb_flat}"/*.dtb "${dtb_flat}"/*.strip 2>/dev/null | xargs -n1 basename | grep -E "(kc705|kcu105|vc707|vcu118|vcu128)" || true)
             else
                 dtbs_to_copy=$(ls "${dtb_flat}"/*.dtb 2>/dev/null | xargs -n1 basename | grep -E "^${platform}[-_]|^socfpga_${platform}" || true)
             fi
