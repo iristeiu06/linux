@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
       - 'ci/*'
-      - 'prepare-sdg-linux-artefacts'
+      #- 'prepare-sdg-linux-artefacts'
   pull_request:
 
 jobs:
@@ -261,24 +261,28 @@ jobs:
   #Example of usage if solution is accepted and merged on 'ci'
   deploy_kuiper_binaries:
     needs: [assert_build]
-    # if: >
-    #   (
-    #     github.event_name == 'pull_request' &&
-    #     github.event.pull_request.head.repo.full_name == github.repository &&
-    #     (
-    #       github.event.pull_request.base.ref == 'main' ||
-    #       github.event.pull_request.base.ref == 'next_stable' ||
-    #       startsWith(github.event.pull_request.base.ref, 'xlnx/release/')
-    #     )
-    #   ) ||
-    #   (
-    #     github.event_name == 'push' &&
-    #     (
-    #       github.ref == 'refs/heads/main' ||
-    #       github.ref == 'refs/heads/next_stable' ||
-    #       startsWith(github.ref, 'refs/heads/xlnx/release/')
-    #     )
-    #   )
+    if: >
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        (
+          github.event.pull_request.base.ref == 'main' ||
+          github.event.pull_request.base.ref == 'next_stable' ||
+          startsWith(github.event.pull_request.base.ref, 'xlnx/release/')
+        )
+      ) ||
+      (
+        github.event_name == 'push' &&
+        (
+          github.ref == 'refs/heads/main' ||
+          github.ref == 'refs/heads/next_stable' ||
+          startsWith(github.ref, 'refs/heads/xlnx/release/')
+        )
+      ) &&
+      (
+        github.repository_owner == 'analogdevicesinc'
+      )
+      
     uses: analogdevicesinc/linux/.github/workflows/deploy-kuiper-artifacts.yml@ci1
     secrets: inherit
     permissions:
@@ -299,3 +303,21 @@ jobs:
         adi_mb_defconfig-*
         adi_nios2_defconfig-*
         dtb-*
+
+  trigger_harnest_job:
+    needs: [deploy_kuiper_binaries]
+    runs-on: ubuntu-latest
+    if: needs.deploy_kuiper_binaries.result == 'success'
+    steps:
+      - name: Trigger Jenkins test harness
+        run: |
+          TIMESTAMP=$(date +%Y_%m_%d-%H_%M)
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          PR_ID="${{ github.event.pull_request.number }}"
+          # to check if for JENKINS_URL we use ngrok or webhook relay  
+          curl ${{ secrets.JENKINS_URL }}/job/Linux_TH/buildWithParameters \
+            --user ${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_PASSWORD }} \
+            --data TIMESTAMP=${TIMESTAMP} \
+            --data BRANCH=${BRANCH} \
+            --data PR_ID=${PR_ID}
+
