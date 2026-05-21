@@ -524,12 +524,32 @@ exit_start_stream:
 
 static void xcsi2rxss_stop_stream(struct xcsi2rxss_state *state)
 {
+	u32 timeout = 1000; /* us */
+
 	/* disable interrupts */
 	xcsi2rxss_clr(state, XCSI_IER_OFFSET, XCSI_IER_INTR_MASK);
 	xcsi2rxss_clr(state, XCSI_GIER_OFFSET, XCSI_GIER_GIE);
 
-	/* disable core */
-	xcsi2rxss_clr(state, XCSI_CCR_OFFSET, XCSI_CCR_ENABLE);
+	/*
+	 *   write CCR = SOFTRESET (0x02)  -- assert reset with ENABLE cleared
+	 *   poll until CSR.RIPCD clears
+	 *   write CCR = ENABLE   (0x01)   -- deassert reset, leave IP enabled
+	 *
+	 * Doing soft_reset with ENABLE=0 (CCR=0x02) is required to clear
+	 * the sticky CSR.SLBF status; doing it with ENABLE=1 (the start
+	 * sequence) leaves SLBF asserted across captures.
+	*/
+	xcsi2rxss_write(state, XCSI_CCR_OFFSET, XCSI_CCR_SOFTRESET);
+	while (xcsi2rxss_read(state, XCSI_CSR_OFFSET) & XCSI_CSR_RIPCD) {
+		if (timeout == 0) {
+			dev_err(state->dev, "stop soft reset timed out!\n");
+			break;
+		}
+		timeout--;
+		udelay(1);
+	}
+	xcsi2rxss_write(state, XCSI_CCR_OFFSET, XCSI_CCR_ENABLE);
+
 	state->streaming = false;
 }
 
@@ -650,7 +670,6 @@ static int xcsi2rxss_s_stream(struct v4l2_subdev *sd, int enable)
 		ret = xcsi2rxss_start_stream(xcsi2rxss);
 	} else {
 		xcsi2rxss_stop_stream(xcsi2rxss);
-		xcsi2rxss_hard_reset(xcsi2rxss);
 	}
 
 stream_done:
