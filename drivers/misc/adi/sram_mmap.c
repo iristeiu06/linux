@@ -234,13 +234,13 @@ static int __init rmem_sram_setup(struct reserved_mem *rmem)
 	}
 
 	if (rmem->base & (PAGE_SIZE-1)) {
-		pr_err("sram region starting at 0x%px is not page aligned!\n", (void *)rmem->base);
+		pr_err("sram region starting at %pa is not page aligned!\n", &rmem->base);
 		return -EINVAL;
 	}
 
 	if (rmem->size & (PAGE_SIZE-1)) {
-		pr_err("sram region starting at 0x%px is not a multiple of the page size (requested 0x%zx bytes)\n",
-			(void *)rmem->base, rmem->size);
+		pr_err("sram region starting at %pa is not a multiple of the page size (requested %pa bytes)\n",
+			&rmem->base, &rmem->size);
 		return -EINVAL;
 	}
 
