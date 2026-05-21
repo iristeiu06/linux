@@ -2,7 +2,8 @@
 
 config ADI_SRAM_MMAP
 	bool "Aarch64 MMAP driver for sc5xx onchip SRAM"
-	depends on ARCH_SC59X_64 && SRAM
+	depends on ARCH_SC59X_64 || COMPILE_TEST
+	depends on SRAM
 	default n
 	help
 	  Enable the mmap driver for sc5xx on chip SRAM.
