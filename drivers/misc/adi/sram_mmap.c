@@ -96,8 +96,10 @@ static int sram_mmap(struct file *fp, struct vm_area_struct *vma)
 	}
 
 	fp->f_mapping->a_ops = &sram_aops;
+#ifdef CONFIG_ARM64
 	vma->vm_page_prot = __pgprot_modify(vma->vm_page_prot, PTE_ATTRINDX_MASK,
 		PTE_ATTRINDX(MT_NORMAL) | PTE_PXN | PTE_UXN);
+#endif
 	vma->vm_private_data = sram;
 	vma->vm_ops = NULL;
 
