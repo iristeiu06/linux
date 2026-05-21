@@ -2,7 +2,7 @@
 
 config ADI_SYSTEM_CONFIG
 	bool "ADI System Config" if COMPILE_TEST
-	default ARCH_SC59X_64 || ARCH_SC5XX
+	default ARCH_SC59X_64 || ARCH_SC59X || ARCH_SC58X || ARCH_SC57X
 	select REGMAP_MMIO
 	help
 	  This enables support for the ADI System Config system, which
