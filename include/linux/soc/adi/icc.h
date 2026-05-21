@@ -117,7 +117,7 @@ struct adi_resource_table_hdr {
 
 struct adi_tru;
 
-#if IS_ENABLED(CONFIG_ARCH_SC5XX) || IS_ENABLED(CONFIG_ARCH_SC59X_64)
+#if IS_ENABLED(CONFIG_ADI_MACH_SC5XX)
 struct adi_tru *get_adi_tru_from_node(struct device *dev);
 void put_adi_tru(struct adi_tru *tru);
 int adi_tru_trigger_device(struct adi_tru *tru, struct device *dev);

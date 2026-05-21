@@ -65,7 +65,7 @@
 struct adi_rcu;
 struct adi_sec;
 
-#if IS_ENABLED(CONFIG_ARCH_SC5XX) || IS_ENABLED(CONFIG_ARCH_SC59X_64)
+#if IS_ENABLED(CONFIG_ADI_MACH_SC5XX)
 /*
  * Get the RCU instance connected to the given device as a device tree phandle
  * in a property named "adi,rcu"
